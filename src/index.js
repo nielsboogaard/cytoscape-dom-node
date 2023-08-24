@@ -24,12 +24,32 @@ class CytoscapeDomNode {
                 let node_div = e.target;
                 let id = node_div.__cy_id;
                 let n  = cy.getElementById(id);
-                n.style({'width': node_div.offsetWidth, 'height': node_div.offsetHeight, shape: 'rectangle'});
+                n.style({'width': node_div.offsetWidth, 'height': node_div.offsetHeight});
             }
         });
 
         cy.on('add', 'node', (ev) => {
             this._add_node(ev.target);
+        });
+
+        cy.on('data', 'node', (ev) => {
+            let node = ev.target,
+                hasDomData = node.data('dom') !== undefined,
+                id = node.id();
+
+            if (!hasDomData && this._node_dom[id]) {
+                // remove dom node as data.dom is removed from the node
+                let dom = this._node_dom[id];
+                delete this._node_dom[id];
+                this._resize_observer.unobserve(dom);
+                this._nodes_dom_container.removeChild(dom);
+
+                // reset node styling
+                node.style({'width': 'label', 'height': 'label'});
+            } else if (hasDomData && !this._node_dom[id]) {
+                // add dom node as data.dom has been added to the node
+                this._add_node(node);
+            }
         });
 
         for (let n of cy.nodes())
